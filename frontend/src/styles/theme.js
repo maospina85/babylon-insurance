@@ -7,7 +7,7 @@
 export const theme = {
   brand: {
     name: 'Babylon',
-    tagline: 'Custom Insurance',
+    tagline: 'Tu seguro a medida',
     logo: null, // ReactComponent | null → usa texto estilizado
     gradient: 'linear-gradient(135deg, #2B5BF5 0%, #7B2FF7 50%, #E91E8C 100%)',
     gradientSoft: 'linear-gradient(135deg, #EEF2FF 0%, #F5F0FF 50%, #FFF0F7 100%)',
