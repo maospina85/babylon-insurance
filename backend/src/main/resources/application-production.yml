@@ -1,0 +1,11 @@
+spring:
+  mongodb:
+    uri: ${MONGODB_URI}
+  data:
+    mongodb:
+      auto-index-creation: false   # índices gestionados manualmente con init-indexes.js
+
+logging:
+  level:
+    root: INFO
+    com.babylon: INFO

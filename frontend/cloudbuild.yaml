@@ -1,0 +1,32 @@
+substitutions:
+  _IMAGE_TAG: latest
+  _ARTIFACT_REGISTRY: us-central1-docker.pkg.dev/babylon-insurance/babylon-registry
+  _VITE_API_URL: http://localhost:8080
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: docker-build
+    args:
+      - build
+      - -t
+      - ${_ARTIFACT_REGISTRY}/babylon-frontend:${_IMAGE_TAG}
+      - -t
+      - ${_ARTIFACT_REGISTRY}/babylon-frontend:latest
+      - --build-arg
+      - VITE_API_URL=${_VITE_API_URL}
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    id: docker-push
+    args: [push, --all-tags, ${_ARTIFACT_REGISTRY}/babylon-frontend]
+    waitFor: [docker-build]
+
+images:
+  - ${_ARTIFACT_REGISTRY}/babylon-frontend:${_IMAGE_TAG}
+  - ${_ARTIFACT_REGISTRY}/babylon-frontend:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_MEDIUM
+
+timeout: 300s

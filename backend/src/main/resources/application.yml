@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: babylon-insurance-backend
+  config:
+    import: optional:file:./config/application.yml
+  main:
+    allow-bean-definition-overriding: true
+  mongodb:
+    uri: ${MONGODB_URI:mongodb+srv://root:root@babylom.zezwdic.mongodb.net/babylon?appName=babylom}
+  data:
+    mongodb:
+      auto-index-creation: true
+  webflux:
+    base-path: /
+
+server:
+  port: 8080
+  error:
+    include-message: never        # never expose exception messages to clients
+    include-stacktrace: never     # A05: no stack traces in error responses
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+babylon:
+  encryption:
+    key: ${BABYLON_ENCRYPTION_KEY:ybKfIJ3hcoLkTRFr9Hw5cNw9QyX4UQSItV6DBcgvxvY=}
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175}
+
+logging:
+  level:
+    root: INFO
+    com.babylon: DEBUG
+
