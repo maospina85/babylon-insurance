@@ -18,8 +18,12 @@ steps:
 
   - name: gcr.io/cloud-builders/docker
     id: docker-push
-    args: [push, --all-tags, ${_ARTIFACT_REGISTRY}/babylon-frontend]
-    waitFor: [docker-build]
+    args:
+      - push
+      - --all-tags
+      - ${_ARTIFACT_REGISTRY}/babylon-frontend
+    waitFor:
+      - docker-build
 
 images:
   - ${_ARTIFACT_REGISTRY}/babylon-frontend:${_IMAGE_TAG}
