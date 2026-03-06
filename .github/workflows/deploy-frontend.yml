@@ -84,8 +84,10 @@ jobs:
           FRONTEND_URL=$(gcloud run services describe ${{ env.FRONTEND_SERVICE }} \
             --region=${{ env.REGION }} \
             --format='value(status.url)')
-          echo "Frontend URL: $FRONTEND_URL"
-          echo -n "$FRONTEND_URL" | gcloud secrets versions add ALLOWED_ORIGINS --data-file=-
+          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format='value(projectNumber)')
+          FRONTEND_URL2="https://${{ env.FRONTEND_SERVICE }}-${PROJECT_NUMBER}.${{ env.REGION }}.run.app"
+          echo "Frontend URLs: $FRONTEND_URL , $FRONTEND_URL2"
+          echo -n "$FRONTEND_URL,$FRONTEND_URL2" | gcloud secrets versions add ALLOWED_ORIGINS --data-file=-
       - name: Print URLs
         run: |
           echo "Backend: $(gcloud run services describe ${{ env.BACKEND_SERVICE }} --region=${{ env.REGION }} --format='value(status.url)')"
