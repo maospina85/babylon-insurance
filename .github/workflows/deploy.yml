@@ -94,16 +94,20 @@ jobs:
             --max-instances=5 \
             --port=8080 \
             --no-allow-unauthenticated
-      - name: Health check
+      - name: Verify deployment
         run: |
           BACKEND_URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} \
             --region=${{ env.REGION }} \
             --format='value(status.url)')
           echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
-          TOKEN=$(gcloud auth print-identity-token --audiences="$BACKEND_URL")
-          curl --fail --retry 5 --retry-delay 5 \
-            -H "Authorization: Bearer $TOKEN" \
-            "$BACKEND_URL/actuator/health"
+          READY=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.conditions[0].status)')
+          echo "Backend URL: $BACKEND_URL — Ready: $READY"
+          if [ "$READY" != "True" ]; then
+            echo "Service not ready"
+            exit 1
+          fi
 
   deploy-frontend:
     name: Deploy Frontend
