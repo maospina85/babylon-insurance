@@ -1,0 +1,29 @@
+substitutions:
+  _IMAGE_TAG: latest
+  _ARTIFACT_REGISTRY: us-central1-docker.pkg.dev/babylon-insurance/babylon-registry
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: docker-build
+    args:
+      - build
+      - -t
+      - ${_ARTIFACT_REGISTRY}/babylon-backend:${_IMAGE_TAG}
+      - -t
+      - ${_ARTIFACT_REGISTRY}/babylon-backend:latest
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    id: docker-push
+    args: [push, --all-tags, ${_ARTIFACT_REGISTRY}/babylon-backend]
+    waitFor: [docker-build]
+
+images:
+  - ${_ARTIFACT_REGISTRY}/babylon-backend:${_IMAGE_TAG}
+  - ${_ARTIFACT_REGISTRY}/babylon-backend:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_MEDIUM
+
+timeout: 600s

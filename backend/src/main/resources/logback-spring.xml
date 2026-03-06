@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <springProperty scope="context" name="springAppName"
+                    source="spring.application.name" defaultValue="babylon-insurance"/>
+    <springProperty scope="context" name="activeProfile"
+                    source="spring.profiles.active" defaultValue="local"/>
+
+    <!-- ── JSON appender for production / structured logging ── -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"${springAppName}","env":"${activeProfile}"}</customFields>
+            <includeMdcKeyName>correlationId</includeMdcKeyName>
+            <includeMdcKeyName>event</includeMdcKeyName>
+            <includeMdcKeyName>policyNumber</includeMdcKeyName>
+            <includeMdcKeyName>modules</includeMdcKeyName>
+            <includeMdcKeyName>version</includeMdcKeyName>
+            <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                <maxDepthPerCause>10</maxDepthPerCause>
+                <rootCauseFirst>true</rootCauseFirst>
+            </throwableConverter>
+        </encoder>
+    </appender>
+
+    <!-- ── Plain-text appender for local development readability ── -->
+    <appender name="PLAIN_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%X{correlationId:-N/A}] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Use JSON in production, plain text in local / test -->
+    <springProfile name="production">
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+        <logger name="com.babylon" level="INFO"/>
+    </springProfile>
+
+    <springProfile name="!production">
+        <root level="INFO">
+            <appender-ref ref="PLAIN_CONSOLE"/>
+        </root>
+        <logger name="com.babylon" level="DEBUG"/>
+        <logger name="org.springframework.data.mongodb" level="WARN"/>
+        <logger name="org.springframework.security" level="WARN"/>
+    </springProfile>
+
+</configuration>
