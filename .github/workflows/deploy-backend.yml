@@ -1,0 +1,92 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**']
+  pull_request:
+    branches: [main, develop]
+    paths: ['backend/**']
+
+env:
+  PROJECT_ID: babylon-insurance
+  REGION: us-central1
+  ARTIFACT_REGISTRY: us-central1-docker.pkg.dev/babylon-insurance/babylon-registry
+  BACKEND_SERVICE: babylon-backend
+
+jobs:
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java 23
+        uses: actions/setup-java@v4
+        with:
+          java-version: '23'
+          distribution: temurin
+          cache: maven
+      - name: Run tests
+        working-directory: backend
+        run: ./mvnw verify -B
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco/
+
+  deploy-backend:
+    name: Deploy Backend
+    needs: test-backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+      - name: Build and push backend
+        run: |
+          gcloud builds submit \
+            --config=backend/cloudbuild.yaml \
+            --region=${{ env.REGION }} \
+            --substitutions=_IMAGE_TAG=${{ github.sha }} \
+            backend/
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.BACKEND_SERVICE }} \
+            --image=${{ env.ARTIFACT_REGISTRY }}/babylon-backend:${{ github.sha }} \
+            --platform=managed \
+            --region=${{ env.REGION }} \
+            --service-account=babylon-backend-sa@babylon-insurance.iam.gserviceaccount.com \
+            --set-secrets="MONGODB_URI=MONGODB_URI:latest,BABYLON_ENCRYPTION_KEY=BABYLON_ENCRYPTION_KEY:latest,ALLOWED_ORIGINS=ALLOWED_ORIGINS:latest" \
+            --set-env-vars="SPRING_PROFILES_ACTIVE=production" \
+            --memory=1Gi \
+            --cpu=1 \
+            --min-instances=0 \
+            --max-instances=5 \
+            --port=8080 \
+            --no-allow-unauthenticated
+      - name: Verify deployment
+        run: |
+          BACKEND_URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+          READY=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.conditions[0].status)')
+          echo "Backend URL: $BACKEND_URL — Ready: $READY"
+          if [ "$READY" != "True" ]; then
+            echo "Service not ready"
+            exit 1
+          fi
