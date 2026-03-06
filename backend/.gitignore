@@ -38,4 +38,4 @@ build/
 .env.production
 
 ### External config with real credentials — NEVER commit ###
-config/
+/config/
