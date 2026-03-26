@@ -1,0 +1,21 @@
+{
+  "name": "babylon-insurance-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for Babylon Insurance frontend",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:smoke": "playwright test 01-smoke",
+    "test:coverage": "playwright test 02-coverage",
+    "test:beneficiaries": "playwright test 03-beneficiaries",
+    "test:assistances": "playwright test 04-assistances",
+    "test:holder": "playwright test 05-holder-form",
+    "test:cart": "playwright test 06-cart-pricing",
+    "test:e2e": "playwright test 07-happy-path"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0"
+  }
+}
