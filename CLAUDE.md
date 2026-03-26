@@ -19,6 +19,7 @@ Beneficiarios ilimitados por porcentaje (suma = 100%).
 babylon-insurance/
 ├── frontend/          React 18 + Vite — SPA modular con theming por tenant
 ├── backend/           Spring Boot 4.0.3 + Java 23 + WebFlux + MongoDB Reactive
+├── tests/             Playwright E2E — 36 tests contra producción Cloud Run
 └── .github/workflows/ CI/CD → GCP Cloud Run via GitHub Actions + Workload Identity Federation
 ```
 
@@ -214,6 +215,48 @@ npm run build
 - Backend: Cloud Run `--no-allow-unauthenticated`, 1Gi, min=0 max=5
 - Secrets en GCP Secret Manager: `MONGODB_URI`, `BABYLON_ENCRYPTION_KEY`
 - GitHub Secrets: `GCP_PROJECT_ID`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+
+---
+
+## Tests E2E (Playwright)
+
+### Estructura
+```
+tests/
+├── playwright.config.ts         Apunta a producción Cloud Run
+├── package.json                 Scripts de ejecución
+└── e2e/
+    ├── fixtures/test-data.ts    Datos centralizados (VALID_HOLDER, MODULES, etc.)
+    ├── helpers/setup.ts         Helpers reutilizables (loadApp, activateModule, fillHolder…)
+    └── specs/
+        ├── 01-smoke.spec.ts     Carga, título, catálogo completo
+        ├── 02-modules.spec.ts   Toggle, selección de tier, expansión
+        ├── 03-beneficiaries.spec.ts  Agregar/quitar, validaciones, % suma=100
+        ├── 04-assistances.spec.ts    Límite por módulos activos, toggle
+        ├── 05-holder-form.spec.ts    Validaciones nombre/email/teléfono/edad
+        ├── 06-cart-pricing.spec.ts   Precios, descuento anual, suma asegurada
+        └── 07-happy-path.spec.ts     Flujo completo, submit, pantalla éxito
+```
+
+### Comandos (desde `tests/`)
+```bash
+npx playwright test              # headless, todos los tests
+npx playwright test --headed     # con browser visible
+npx playwright test --ui         # UI interactiva con timeline
+npx playwright test 03-beneficiaries  # suite específica
+npx playwright show-report       # ver último reporte HTML
+```
+
+### Invariantes de los tests
+- **36/36 tests pasan** contra producción Cloud Run
+- `loadApp` timeout = 45 s (Cloud Run `min=0` puede cold-start ~25 s)
+- El botón CTA tiene `aria-label='Continuar con la cotización'` — NO usar el texto `'Continuar →'` en locators
+- `useBeneficiaries` inicia vacío: siempre llamar "Agregar beneficiario" antes de intentar llenar inputs
+- Para alertas de suma de beneficiarios usar `p[role="alert"]`, no `getByRole('alert')` (los error spans vacíos de BeneficiaryRow también tienen ese rol)
+
+### Gitflow
+- **Siempre usar feature branches** — nunca commitear directo a `main`
+- Flujo: `feature/nombre` → commits → PR con descripción → merge
 
 ---
 
