@@ -16,8 +16,8 @@ test.describe('Suite 7 — Happy Path & Submission', () => {
     // 3. Fill holder form
     await fillHolder(page);
 
-    // 4. Verify CTA is enabled
-    await expect(page.getByRole('button', { name: 'Continuar →' })).toBeEnabled();
+    // 4. Verify CTA is enabled (aria-label overrides button text)
+    await expect(page.getByRole('button', { name: 'Continuar con la cotización' })).toBeEnabled();
 
     // 5. Submit
     await clickCTA(page);
@@ -68,7 +68,7 @@ test.describe('Suite 7 — Happy Path & Submission', () => {
     await fillHolder(page);
     await clickCTA(page);
 
-    await expect(page.getByText('¡Cotización creada!')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('¡Cotización creada!')).toBeVisible({ timeout: 40_000 });
 
     await page.getByRole('button', { name: 'Nueva cotización' }).click();
 

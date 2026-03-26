@@ -4,8 +4,8 @@ import { VALID_HOLDER, VALID_BENEFICIARY } from '../fixtures/test-data';
 /** Navigate to app and wait for catalog to load */
 export async function loadApp(page: Page) {
   await page.goto('/');
-  // Wait until loading spinner is gone and at least one module card is visible
-  await expect(page.getByText('Cargando catálogo…')).not.toBeVisible({ timeout: 15_000 });
+  // Wait until loading spinner is gone — Cloud Run min=0 can cold-start in ~25s
+  await expect(page.getByText('Cargando catálogo…')).not.toBeVisible({ timeout: 45_000 });
   await expect(page.getByText('1. Elige tus coberturas')).toBeVisible();
 }
 
@@ -24,11 +24,15 @@ export async function selectTier(page: Page, tierLabel: string) {
  * Returns after the module is active and a tier is selected.
  */
 export async function activateModule(page: Page, moduleLabel: string) {
-  // Click the module header row (role=button with aria-expanded)
   const moduleArticle = page.locator(`article[aria-label="Módulo ${moduleLabel}"]`);
-  await moduleArticle.getByRole('button', { name: new RegExp(`Activar|Desactivar`) }).click();
-  // Select first tier
-  await moduleArticle.getByRole('radio').first().click();
+  // Click the switch directly to avoid ambiguity with the outer header button
+  await moduleArticle.locator('[role="switch"]').click();
+  // Wait until the switch is confirmed checked before selecting tier
+  await expect(moduleArticle.locator('[role="switch"]')).toHaveAttribute('aria-checked', 'true');
+  // Select first tier and wait until it is marked as pressed
+  const firstTier = moduleArticle.getByRole('radio').first();
+  await firstTier.click();
+  await expect(firstTier).toHaveAttribute('aria-pressed', 'true');
 }
 
 /** Fill a single beneficiary row (first one by default) with valid data */
@@ -41,15 +45,22 @@ export async function fillBeneficiary(
   const relation = opts.relation ?? VALID_BENEFICIARY.relation;
   const pct = opts.pct ?? VALID_BENEFICIARY.pct;
 
-  // Find the first beneficiary name field for this module (id starts with ben-name-{moduleId})
-  const nameInput = page.locator(`[id^="ben-name-${moduleId}-"]`).first();
+  // Use input[] prefix to avoid matching the error <span> elements that share the same id prefix
+  const nameInput = page.locator(`input[id^="ben-name-${moduleId}-"]`).first();
+
+  // If no rows exist yet, add the first one
+  if (await nameInput.count() === 0) {
+    await page.getByRole('button', { name: /Agregar beneficiario/ }).first().click();
+    await expect(nameInput).toBeVisible({ timeout: 5_000 });
+  }
+
   await nameInput.fill(name);
   await nameInput.blur();
 
-  const relSelect = page.locator(`[id^="ben-rel-${moduleId}-"]`).first();
+  const relSelect = page.locator(`select[id^="ben-rel-${moduleId}-"]`).first();
   await relSelect.selectOption(relation);
 
-  const pctInput = page.locator(`[id^="ben-pct-${moduleId}-"]`).first();
+  const pctInput = page.locator(`input[id^="ben-pct-${moduleId}-"]`).first();
   await pctInput.fill(pct);
   await pctInput.blur();
 }
@@ -71,12 +82,13 @@ export async function fillHolder(page: Page, data = VALID_HOLDER) {
 
 /** Click the main CTA button in the cart */
 export async function clickCTA(page: Page) {
-  await page.getByRole('button', { name: 'Continuar →' }).click();
+  // Button text is 'Continuar →' but aria-label overrides to 'Continuar con la cotización'
+  await page.getByRole('button', { name: 'Continuar con la cotización' }).click();
 }
 
 /** Wait for and return the policy number from the success screen */
 export async function getPolicyNumber(page: Page): Promise<string> {
-  await expect(page.getByText('¡Cotización creada!')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('¡Cotización creada!')).toBeVisible({ timeout: 40_000 });
   const policyEl = page.locator('text=/BLF-[A-Z0-9]+/');
   await expect(policyEl).toBeVisible();
   return (await policyEl.textContent()) ?? '';

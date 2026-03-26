@@ -25,10 +25,10 @@ test.describe('Suite 1 — Smoke & Render', () => {
     await loadApp(page);
 
     for (const label of Object.values(MODULES)) {
-      await expect(page.getByText(label)).toBeVisible();
+      await expect(page.locator(`article[aria-label="Módulo ${label}"]`)).toBeVisible();
     }
     for (const label of Object.values(ASSISTANCES)) {
-      await expect(page.getByText(label)).toBeVisible();
+      await expect(page.getByRole('checkbox', { name: new RegExp(label) })).toBeVisible();
     }
   });
 

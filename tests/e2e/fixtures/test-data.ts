@@ -35,7 +35,7 @@ export const INVALID_HOLDER = {
   nameWithNumbers: 'Juan123',
   emailNoAt:       'notanemail',
   emailNoDomain:   'test@',
-  phoneShort:      '+57 123',
+  phoneShort:      '123',
   dobUnder18: (() => {
     const d = new Date();
     d.setFullYear(d.getFullYear() - 17);
