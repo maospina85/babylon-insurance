@@ -89,6 +89,62 @@ npx playwright show-report       # ver reporte HTML del último run
 
 > **Nota:** Cloud Run usa `min=0` — el primer test puede tardar ~25 s mientras el backend hace cold start.
 
+## Arquitectura de Infraestructura (GCP)
+
+```mermaid
+graph TB
+    DEV(["👨‍💻 Developer\nGitHub push → main"])
+
+    subgraph GHA["⚙️ GitHub Actions"]
+        WF["CI/CD Workflow"]
+        WIF["Workload Identity\nFederation (OIDC)\nkeyless — sin JSON keys"]
+    end
+
+    subgraph GCP["☁️ Google Cloud Platform — us-central1"]
+        SA["🔑 Service Account\nbabylon-cicd-sa"]
+
+        subgraph BUILD["Cloud Build"]
+            CB["Docker build\nfrontend + backend"]
+        end
+
+        subgraph AR["Artifact Registry"]
+            IMG_FE["babylon-frontend:latest"]
+            IMG_BE["babylon-backend:latest"]
+        end
+
+        subgraph SM["Secret Manager"]
+            S1["MONGODB_URI"]
+            S2["BABYLON_ENCRYPTION_KEY"]
+            S3["ALLOWED_ORIGINS"]
+        end
+
+        subgraph CR["Cloud Run"]
+            FE["🌐 Frontend\n512 Mi · min=0 · max=5\npúblico"]
+            BE["⚙️ Backend\n1 Gi · min=0 · max=5\nprivado (no-auth)"]
+        end
+    end
+
+    subgraph EXT["🌍 Externo"]
+        ATLAS[("MongoDB Atlas\nM0 Free · GCP us-central1\nDB: babylon")]
+        USER(["👤 Usuario\nBrowser"])
+    end
+
+    DEV -->|"git push main"| WF
+    WF -->|"OIDC token"| WIF
+    WIF -->|"impersonate"| SA
+    SA -->|"trigger build"| CB
+    CB -->|"push image"| IMG_FE
+    CB -->|"push image"| IMG_BE
+    IMG_FE -->|"deploy"| FE
+    IMG_BE -->|"deploy"| BE
+    BE -.->|"lee secretos\nen arranque"| SM
+    BE -->|"TLS · Atlas URI"| ATLAS
+    USER -->|"HTTPS"| FE
+    FE -->|"REST /api/**\nHTTPS"| BE
+```
+
+---
+
 ## Gitflow
 
 ```
