@@ -194,7 +194,7 @@ npm run build
 - JUnit 5 + Mockito + WebTestClient (`bindToController`, sin `@WebFluxTest`)
 - `@DisplayName` en español
 - Sin `.block()` en tests reactivos
-- Corren en CI (`test-backend` job) en cada push/PR a `backend/**`, pero **no son requisito obligatorio de merge todavía** — el branch protection de `main` solo exige 1 aprobación humana, no exige que este check esté verde (`required_status_checks: null` en el ruleset). Pendiente de decidir si se quiere volver requisito real.
+- Corren en CI (job `Test Backend`) en cada push/PR a `backend/**` — **requisito obligatorio de merge** desde 2026-07-20 (`required_status_checks` en el ruleset de `main` exige el check `Test Backend` en verde, además de la aprobación humana). Playwright/E2E NO es requisito de merge todavía — queda para cuando el agente de automatización lo integre.
 - No existe actualmente un test `@SpringBootTest` tipo "smoke test" en el código
 
 ---
