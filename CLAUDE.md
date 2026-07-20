@@ -20,6 +20,7 @@ babylon-insurance/
 ├── frontend/          React 18 + Vite — SPA modular con theming por tenant
 ├── backend/           Spring Boot 4.0.3 + Java 23 + WebFlux + MongoDB Reactive
 ├── tests/             Playwright E2E — 36 tests contra producción Cloud Run
+├── docs/rag/          Base RAG para el agente de automatización — GITIGNOREADO, no se sube al repo
 └── .github/workflows/ CI/CD → GCP Cloud Run via GitHub Actions + Workload Identity Federation
 ```
 
@@ -188,11 +189,13 @@ npm run build
 
 ## Tests y Cobertura
 
+- **34 tests unitarios JUnit 5** en backend (CreateQuoteServiceTest 7, QuoteControllerTest 6, PremiumCalculatorStrategyTest 5, AesGcmEncryptionTest 7, CorrelationFilterTest 4, ProductControllerTest 3, GetProductServiceTest 2)
 - **JaCoCo**: ≥95% LINE en paquetes `*.domain.*` y `*.application.*` (verificado en `./mvnw.cmd verify`)
-- JUnit 5 + Mockito + WebTestClient
+- JUnit 5 + Mockito + WebTestClient (`bindToController`, sin `@WebFluxTest`)
 - `@DisplayName` en español
 - Sin `.block()` en tests reactivos
-- Smoke test (`@SpringBootTest`) excluye autoconfiguraciones MongoDB para no requerir conexión real
+- Corren en CI (`test-backend` job) en cada push/PR a `backend/**`, pero **no son requisito obligatorio de merge todavía** — el branch protection de `main` solo exige 1 aprobación humana, no exige que este check esté verde (`required_status_checks: null` en el ruleset). Pendiente de decidir si se quiere volver requisito real.
+- No existe actualmente un test `@SpringBootTest` tipo "smoke test" en el código
 
 ---
 
@@ -204,6 +207,7 @@ npm run build
 - CORS: origins configurados en `babylon.cors.allowed-origins`
 - Nunca loggear `holderName`, `holderEmail` ni datos sensibles
 - Nunca exponer stack traces al cliente (`server.error.include-stacktrace=never`)
+- **Nunca poner un valor de fallback con credenciales reales en `application.yml`** (`${VAR}` sin default para cualquier secreto) — hubo un incidente real de esto en el primer commit del repo (Mongo URI y AES key reales hardcodeadas como default), ya remediado: credenciales rotadas, historial de git reescrito con `git filter-repo`, repo pasado a público solo después
 
 ---
 
@@ -212,9 +216,22 @@ npm run build
 - GitHub Actions → Workload Identity Federation (keyless, sin JSON keys)
 - Push a `main` → lint → build imágenes Docker → push Artifact Registry → deploy Cloud Run
 - Frontend: Cloud Run `--allow-unauthenticated`, 512Mi, min=0 max=5
-- Backend: Cloud Run `--no-allow-unauthenticated`, 1Gi, min=0 max=5
-- Secrets en GCP Secret Manager: `MONGODB_URI`, `BABYLON_ENCRYPTION_KEY`
-- GitHub Secrets: `GCP_PROJECT_ID`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+- Backend: Cloud Run `--allow-unauthenticated` (**desplegado público actualmente** — el workflow real usa este flag; si se desea backend privado hay que cambiar `deploy-backend.yml` explícitamente), 1Gi, min=0 max=5
+- Secrets en GCP Secret Manager: `MONGODB_URI`, `BABYLON_ENCRYPTION_KEY`, `ALLOWED_ORIGINS`
+- GitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+- Repo **público** en GitHub (`maospina85/babylon-insurance`) desde 2026-07-20
+- MongoDB Atlas M0 se **auto-pausa tras ~60 días de inactividad** — si el backend falla con `Failed looking up SRV record`, entrar a cloud.mongodb.com y darle "Resume" (1-3 min, no pierde datos)
+
+### Branch protection en `main`
+- Ruleset `main-pr-approval`: requiere 1 aprobación de PR antes de merge, bloquea force-push y borrado de `main`
+- Bypass configurado **solo** para la cuenta owner (`maospina85`) — cualquier otra identidad (incluyendo el agente/bot) debe pasar por PR + aprobación humana real, sin excepción
+
+### Agente de automatización (PR review + Playwright)
+- GitHub App dedicada: `babylon-insurance-agent` (App ID `4350379`), instalada solo en este repo
+- Permisos: `contents:write`, `pull_requests:write`, `metadata:read` — nada de `workflows` ni `secrets`
+- Private key en `backend/.secrets/` (gitignoreada), tokens de instalación expiran en 1h
+- Propósito: al abrir una PR, revisa el diff y genera/actualiza tests Playwright para mantener la suite E2E sincronizada con el código; a futuro el pipeline podría exigir la suite completa en verde como requisito de merge (no implementado aún)
+- Detalle completo de convenciones que el agente debe seguir: `docs/rag/agente-automatizacion.md` (local, gitignoreado)
 
 ---
 
@@ -230,7 +247,7 @@ tests/
     ├── helpers/setup.ts         Helpers reutilizables (loadApp, activateModule, fillHolder…)
     └── specs/
         ├── 01-smoke.spec.ts     Carga, título, catálogo completo
-        ├── 02-modules.spec.ts   Toggle, selección de tier, expansión
+        ├── 02-coverage.spec.ts  Toggle, selección de tier, expansión
         ├── 03-beneficiaries.spec.ts  Agregar/quitar, validaciones, % suma=100
         ├── 04-assistances.spec.ts    Límite por módulos activos, toggle
         ├── 05-holder-form.spec.ts    Validaciones nombre/email/teléfono/edad
@@ -257,6 +274,7 @@ npx playwright show-report       # ver último reporte HTML
 ### Gitflow
 - **Siempre usar feature branches** — nunca commitear directo a `main`
 - Flujo: `feature/nombre` → commits → PR con descripción → merge
+- Ramas del agente de automatización: prefijo `agent/`, ej. `agent/playwright/<slug>` — si el agente reacciona a una PR de dev ya abierta, no crea rama nueva, commitea directo sobre esa rama (ver `docs/rag/agente-automatizacion.md`)
 
 ---
 
