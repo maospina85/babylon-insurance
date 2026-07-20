@@ -6,7 +6,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
   mongodb:
-    uri: ${MONGODB_URI:mongodb+srv://REDACTED:REDACTED@REDACTED.mongodb.net/babylon?appName=babylom}
+    uri: ${MONGODB_URI}
   data:
     mongodb:
       auto-index-creation: true
@@ -31,7 +31,7 @@ management:
 
 babylon:
   encryption:
-    key: ${BABYLON_ENCRYPTION_KEY:REDACTED_ENCRYPTION_KEY}
+    key: ${BABYLON_ENCRYPTION_KEY}
   cors:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175}
 
