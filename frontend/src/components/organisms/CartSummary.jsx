@@ -15,9 +15,11 @@ import { copFmt } from '../../constants/catalog';
  *   annual: boolean,
  *   onAnnualChange: (value: boolean) => void,
  *   submitting: boolean,
+ *   discountCode: string,
+ *   onDiscountCodeChange: (value: string) => void,
  * }} props
  */
-export function CartSummary({ breakdown, premium, selectedAssistances, canContinue, onContinue, annual, onAnnualChange, submitting }) {
+export function CartSummary({ breakdown, premium, selectedAssistances, canContinue, onContinue, annual, onAnnualChange, submitting, discountCode, onDiscountCodeChange }) {
   const theme = useTheme();
 
   const displayPrice = annual ? premium.totalAnnualDiscounted : premium.totalMonthly;
@@ -206,6 +208,41 @@ export function CartSummary({ breakdown, premium, selectedAssistances, canContin
               </strong>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Discount code */}
+      {!premium.isEmpty && (
+        <div>
+          <label
+            htmlFor="discount-code"
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: theme.brand.textSecondary,
+              marginBottom: 6,
+              display: 'block',
+            }}
+          >
+            Código de descuento
+          </label>
+          <input
+            id="discount-code"
+            type="text"
+            value={discountCode}
+            onChange={(e) => onDiscountCodeChange(e.target.value)}
+            placeholder="Opcional"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: theme.shape.buttonRadius,
+              border: '1.5px solid #E5E7EB',
+              fontSize: 13,
+              fontFamily: theme.typography.fontFamily,
+              boxSizing: 'border-box',
+              color: theme.brand.textPrimary,
+            }}
+          />
         </div>
       )}
 

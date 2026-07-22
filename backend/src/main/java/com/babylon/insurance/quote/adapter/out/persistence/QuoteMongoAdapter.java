@@ -62,6 +62,7 @@ public class QuoteMongoAdapter implements QuoteRepositoryPort {
         doc.setPolicyNumber(q.policyNumber());
         doc.setStatus(q.status().name());
         doc.setCreatedAt(q.createdAt());
+        doc.setAppliedDiscountCode(q.appliedDiscountCode());
         return doc;
     }
 
@@ -96,7 +97,8 @@ public class QuoteMongoAdapter implements QuoteRepositoryPort {
                 doc.getPaymentFrequency(),
                 doc.getPolicyNumber(),
                 QuoteStatus.valueOf(doc.getStatus()),
-                doc.getCreatedAt()
+                doc.getCreatedAt(),
+                doc.getAppliedDiscountCode()
         );
     }
 

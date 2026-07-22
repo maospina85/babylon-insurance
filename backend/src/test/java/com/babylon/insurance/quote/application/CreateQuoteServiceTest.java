@@ -1,11 +1,14 @@
 package com.babylon.insurance.quote.application;
 
+import com.babylon.insurance.discount.domain.model.DiscountCode;
+import com.babylon.insurance.discount.domain.port.out.DiscountCodeRepositoryPort;
 import com.babylon.insurance.quote.domain.model.Beneficiary;
 import com.babylon.insurance.quote.domain.model.QuoteStatus;
 import com.babylon.insurance.quote.domain.model.SelectedCoverage;
 import com.babylon.insurance.quote.domain.port.in.CreateQuoteCommand;
 import com.babylon.insurance.quote.domain.port.out.QuoteRepositoryPort;
 import com.babylon.insurance.shared.encryption.EncryptionPort;
+import com.babylon.insurance.shared.exception.QuoteValidationException;
 import com.babylon.insurance.shared.logging.StructuredLogger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +36,7 @@ class CreateQuoteServiceTest {
 
     @Mock private QuoteRepositoryPort repository;
     @Mock private EncryptionPort encryption;
+    @Mock private DiscountCodeRepositoryPort discountCodeRepository;
     @Mock private StructuredLogger log;
 
     private CreateQuoteService service;
@@ -40,8 +44,9 @@ class CreateQuoteServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CreateQuoteService(repository, encryption, new DefaultPremiumCalculator(), log);
-        when(encryption.encrypt(anyString())).thenReturn("ENCRYPTED_VALUE");
+        service = new CreateQuoteService(
+                repository, encryption, new DefaultPremiumCalculator(), discountCodeRepository, log);
+        lenient().when(encryption.encrypt(anyString())).thenReturn("ENCRYPTED_VALUE");
         // lenient + null-safe: Mockito evaluates the answer with null during re-stubbing;
         // Mono.just(null) would throw NPE, so guard explicitly.
         lenient().when(repository.save(any())).thenAnswer(inv -> {
@@ -103,7 +108,7 @@ class CreateQuoteServiceTest {
     void givenEmptyCoverages_whenExecute_thenTotalPrimaIsZero() {
         CreateQuoteCommand cmd = new CreateQuoteCommand(
                 "Test", "test@t.com", "+57 300", "1990-01-01",
-                List.of(), List.of(), List.of(), "mensual");
+                List.of(), List.of(), List.of(), "mensual", null);
 
         StepVerifier.create(service.execute(cmd, CORRELATION_ID))
                 .assertNext(quote ->
@@ -133,7 +138,7 @@ class CreateQuoteServiceTest {
                         BigDecimal.valueOf(12_500), BigDecimal.valueOf(10_000_000)));
         CreateQuoteCommand cmd = new CreateQuoteCommand(
                 "María García", "maria@email.com", "+57 300 000 0000", "1990-06-15",
-                coverages, List.of(ben), List.of(), "mensual");
+                coverages, List.of(ben), List.of(), "mensual", null);
 
         StepVerifier.create(service.execute(cmd, CORRELATION_ID))
                 .assertNext(quote -> {
@@ -149,6 +154,55 @@ class CreateQuoteServiceTest {
                 .verifyComplete();
     }
 
+    @Test
+    @DisplayName("dado un código de descuento válido cuando se ejecuta entonces la prima se reduce y el código queda registrado")
+    void givenValidDiscountCode_whenExecute_thenPrimaIsDiscountedAndCodeStored() {
+        when(discountCodeRepository.findByCode("BABYLON10"))
+                .thenReturn(Mono.just(new DiscountCode("BABYLON10", BigDecimal.valueOf(10), true)));
+
+        CreateQuoteCommand cmd = buildCommandWithDiscount("BABYLON10");
+
+        StepVerifier.create(service.execute(cmd, CORRELATION_ID))
+                .assertNext(quote -> {
+                    assertThat(quote.totalMonthlyPrima()).isEqualByComparingTo(BigDecimal.valueOf(11_250));
+                    assertThat(quote.appliedDiscountCode()).isEqualTo("BABYLON10");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("dado un código de descuento inactivo cuando se ejecuta entonces falla con QuoteValidationException")
+    void givenInactiveDiscountCode_whenExecute_thenThrowsQuoteValidationException() {
+        when(discountCodeRepository.findByCode("OLDCODE"))
+                .thenReturn(Mono.just(new DiscountCode("OLDCODE", BigDecimal.valueOf(15), false)));
+
+        CreateQuoteCommand cmd = buildCommandWithDiscount("OLDCODE");
+
+        StepVerifier.create(service.execute(cmd, CORRELATION_ID))
+                .expectError(QuoteValidationException.class)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("dado un código de descuento inexistente cuando se ejecuta entonces falla con QuoteValidationException")
+    void givenUnknownDiscountCode_whenExecute_thenThrowsQuoteValidationException() {
+        when(discountCodeRepository.findByCode("NOEXISTE")).thenReturn(Mono.empty());
+
+        CreateQuoteCommand cmd = buildCommandWithDiscount("NOEXISTE");
+
+        StepVerifier.create(service.execute(cmd, CORRELATION_ID))
+                .expectError(QuoteValidationException.class)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("dado que no se envía código de descuento cuando se ejecuta entonces appliedDiscountCode es null")
+    void givenNoDiscountCode_whenExecute_thenAppliedDiscountCodeIsNull() {
+        StepVerifier.create(service.execute(buildCommand(), CORRELATION_ID))
+                .assertNext(quote -> assertThat(quote.appliedDiscountCode()).isNull())
+                .verifyComplete();
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private CreateQuoteCommand buildCommand() {
@@ -158,6 +212,16 @@ class CreateQuoteServiceTest {
         );
         return new CreateQuoteCommand(
                 "María García", "maria@email.com", "+57 300 000 0000", "1990-06-15",
-                coverages, List.of(), List.of("medico_virtual"), "mensual");
+                coverages, List.of(), List.of("medico_virtual"), "mensual", null);
+    }
+
+    private CreateQuoteCommand buildCommandWithDiscount(String discountCode) {
+        List<SelectedCoverage> coverages = List.of(
+                new SelectedCoverage("death", "t1",
+                        BigDecimal.valueOf(12_500), BigDecimal.valueOf(10_000_000))
+        );
+        return new CreateQuoteCommand(
+                "María García", "maria@email.com", "+57 300 000 0000", "1990-06-15",
+                coverages, List.of(), List.of("medico_virtual"), "mensual", discountCode);
     }
 }

@@ -21,6 +21,7 @@ import java.util.List;
  * @param beneficiaries     beneficiaries; total pct per module must equal 100
  * @param assistances       IDs of selected free assistance services
  * @param paymentFrequency  {@code mensual} or {@code anual}
+ * @param discountCode      optional promotional code to apply to the total premium
  */
 public record CreateQuoteCommand(
         String holderName,
@@ -30,5 +31,6 @@ public record CreateQuoteCommand(
         List<SelectedCoverage> selectedCoverages,
         List<Beneficiary> beneficiaries,
         List<String> assistances,
-        String paymentFrequency
+        String paymentFrequency,
+        String discountCode
 ) {}

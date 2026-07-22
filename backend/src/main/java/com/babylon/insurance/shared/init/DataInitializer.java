@@ -1,5 +1,7 @@
 package com.babylon.insurance.shared.init;
 
+import com.babylon.insurance.discount.domain.model.DiscountCode;
+import com.babylon.insurance.discount.domain.port.out.DiscountCodeRepositoryPort;
 import com.babylon.insurance.product.domain.model.CoverageTier;
 import com.babylon.insurance.product.domain.model.DeathCoverage;
 import com.babylon.insurance.product.domain.model.InsuranceModule;
@@ -18,10 +20,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Seeds the product catalogue on startup if the {@code products} collection is empty.
+ * Seeds the product catalogue and promotional discount codes on startup if
+ * their respective collections are empty.
  *
- * <p>This initialiser is idempotent: it checks for an existing active product
- * before inserting, so it can be restarted safely.
+ * <p>This initialiser is idempotent: it checks for existing data before
+ * inserting, so it can be restarted safely.
  *
  * <p>Note: {@code .block()} is acceptable here because this runs exclusively
  * at application startup, outside any reactive pipeline.
@@ -30,11 +33,15 @@ import java.util.Map;
 public class DataInitializer implements ApplicationRunner {
 
     private final ProductRepositoryPort productRepository;
+    private final DiscountCodeRepositoryPort discountCodeRepository;
     private final StructuredLogger log;
 
-    public DataInitializer(ProductRepositoryPort productRepository, StructuredLogger log) {
-        this.productRepository = productRepository;
-        this.log               = log;
+    public DataInitializer(ProductRepositoryPort productRepository,
+                           DiscountCodeRepositoryPort discountCodeRepository,
+                           StructuredLogger log) {
+        this.productRepository      = productRepository;
+        this.discountCodeRepository = discountCodeRepository;
+        this.log                    = log;
     }
 
     /**
@@ -47,6 +54,19 @@ public class DataInitializer implements ApplicationRunner {
         productRepository.findLatestActive()
                 .switchIfEmpty(seedProduct())
                 .block();
+
+        discountCodeRepository.findByCode("BABYLON10")
+                .switchIfEmpty(seedDiscountCodes())
+                .block();
+    }
+
+    // ── discount codes ──────────────────────────────────────────────────────
+
+    private Mono<DiscountCode> seedDiscountCodes() {
+        return discountCodeRepository.save(new DiscountCode("BABYLON20", BigDecimal.valueOf(20), true))
+                .then(discountCodeRepository.save(new DiscountCode("BABYLON10", BigDecimal.valueOf(10), true)))
+                .doOnSuccess(d -> log.info(
+                        "discount_codes_seeded", "system", Map.of("codes", 2)));
     }
 
     // ── private builders ──────────────────────────────────────────────────────

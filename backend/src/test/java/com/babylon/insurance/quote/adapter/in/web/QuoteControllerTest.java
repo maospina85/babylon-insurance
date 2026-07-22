@@ -61,7 +61,7 @@ class QuoteControllerTest {
     void givenBlankHolderName_whenPost_thenReturn400() {
         CreateQuoteRequest invalid = new CreateQuoteRequest(
                 "", "test@test.com", "+57 300 000", LocalDate.of(1990, 1, 1),
-                List.of(validCoverageDto()), List.of(), List.of(), "mensual");
+                List.of(validCoverageDto()), List.of(), List.of(), "mensual", null);
 
         webClient.post().uri("/api/quotes")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -75,7 +75,7 @@ class QuoteControllerTest {
     void givenInvalidEmail_whenPost_thenReturn400() {
         CreateQuoteRequest invalid = new CreateQuoteRequest(
                 "María García", "not-an-email", "+57 300 000", LocalDate.of(1990, 1, 1),
-                List.of(validCoverageDto()), List.of(), List.of(), "mensual");
+                List.of(validCoverageDto()), List.of(), List.of(), "mensual", null);
 
         webClient.post().uri("/api/quotes")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -91,7 +91,7 @@ class QuoteControllerTest {
                 "unknown", "t1", BigDecimal.valueOf(12_500), null);
         CreateQuoteRequest invalid = new CreateQuoteRequest(
                 "María García", "test@test.com", "+57 300 000", LocalDate.of(1990, 1, 1),
-                List.of(badModule), List.of(), List.of(), "mensual");
+                List.of(badModule), List.of(), List.of(), "mensual", null);
 
         webClient.post().uri("/api/quotes")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -107,7 +107,7 @@ class QuoteControllerTest {
                 "death", "t9", BigDecimal.valueOf(12_500), null);
         CreateQuoteRequest invalid = new CreateQuoteRequest(
                 "María García", "test@test.com", "+57 300 000", LocalDate.of(1990, 1, 1),
-                List.of(badTier), List.of(), List.of(), "mensual");
+                List.of(badTier), List.of(), List.of(), "mensual", null);
 
         webClient.post().uri("/api/quotes")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -139,7 +139,7 @@ class QuoteControllerTest {
                         BigDecimal.valueOf(10_000_000))),
                 List.of(), List.of("medico_virtual"),
                 BigDecimal.valueOf(12_500), "mensual", "BLF-TEST01",
-                QuoteStatus.ISSUED, Instant.now());
+                QuoteStatus.ISSUED, Instant.now(), null);
     }
 
     private CreateQuoteRequest buildValidRequest() {
@@ -149,7 +149,7 @@ class QuoteControllerTest {
                 "+57 300 000 0000",
                 LocalDate.of(1990, 6, 15),
                 List.of(validCoverageDto()),
-                List.of(), List.of("medico_virtual"), "mensual");
+                List.of(), List.of("medico_virtual"), "mensual", null);
     }
 
     private SelectedCoverageDto validCoverageDto() {

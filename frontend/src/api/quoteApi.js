@@ -13,7 +13,7 @@ export async function createQuote(payload) {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message ?? `Error al crear cotización: ${res.status}`);
+    throw new Error(body.error ?? body.message ?? `Error al crear cotización: ${res.status}`);
   }
   return res.json();
 }
