@@ -25,6 +25,7 @@ import java.util.List;
  * @param policyNumber          human-readable policy number in BLF-XXXXXXX format
  * @param status                current lifecycle status
  * @param createdAt             UTC timestamp of quote creation
+ * @param appliedDiscountCode   promotional code applied to {@code totalMonthlyPrima}, or {@code null} if none
  */
 public record Quote(
         String quoteId,
@@ -40,5 +41,6 @@ public record Quote(
         String paymentFrequency,
         String policyNumber,
         QuoteStatus status,
-        Instant createdAt
+        Instant createdAt,
+        String appliedDiscountCode
 ) {}

@@ -53,6 +53,9 @@ public class QuoteDocument {
 
     private String status;
 
+    /** Promotional code applied to {@code totalMonthlyPrima}, or {@code null} if none. */
+    private String appliedDiscountCode;
+
     @CreatedDate
     private Instant createdAt;
 

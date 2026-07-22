@@ -91,7 +91,8 @@ public class QuoteController {
                 coverages,
                 beneficiaries,
                 assistances,
-                req.paymentFrequency()
+                req.paymentFrequency(),
+                req.discountCode()
         );
     }
 

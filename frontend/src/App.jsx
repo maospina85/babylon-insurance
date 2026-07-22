@@ -16,6 +16,7 @@ import {
   validateHolderPhone,
   validateHolderDob,
 } from './constants/validations';
+import { copFmt } from './constants/catalog';
 
 const INITIAL_HOLDER = { name: '', email: '', phone: '', dob: '' };
 const INITIAL_TOUCHED = { name: false, email: false, phone: false, dob: false };
@@ -70,6 +71,7 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [quoteResult, setQuoteResult] = useState(null);
+  const [discountCode, setDiscountCode] = useState('');
 
   const canContinue = useMemo(() => {
     if (premium.isEmpty) return false;
@@ -115,6 +117,7 @@ export default function App() {
         beneficiaries,
         assistances: selectedAssistances.map((a) => a.id),
         paymentFrequency: annual ? 'anual' : 'mensual',
+        discountCode: discountCode.trim() || undefined,
       });
 
       setQuoteResult(result);
@@ -123,7 +126,7 @@ export default function App() {
     } finally {
       setSubmitting(false);
     }
-  }, [canContinue, submitting, breakdown, getBeneficiaries, holder, selectedAssistances, annual]);
+  }, [canContinue, submitting, breakdown, getBeneficiaries, holder, selectedAssistances, annual, discountCode]);
 
   // ── Loading / Error states ─────────────────────────────────────────────────
 
@@ -157,6 +160,15 @@ export default function App() {
             <div style={{ fontSize: 22, fontWeight: 900, background: theme.brand.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               {quoteResult.policyNumber}
             </div>
+            <div style={{ fontSize: 12, color: theme.brand.muted, marginTop: 12, marginBottom: 4 }}>Prima {quoteResult.paymentFrequency}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: theme.brand.textPrimary }}>
+              {copFmt(quoteResult.totalMonthlyPrima)}
+            </div>
+            {quoteResult.appliedDiscountCode && (
+              <div style={{ fontSize: 12, color: theme.brand.success, fontWeight: 700, marginTop: 6 }}>
+                Código aplicado: {quoteResult.appliedDiscountCode}
+              </div>
+            )}
           </div>
           <button
             onClick={() => { setQuoteResult(null); }}
@@ -325,6 +337,8 @@ export default function App() {
           annual={annual}
           onAnnualChange={setAnnual}
           submitting={submitting}
+          discountCode={discountCode}
+          onDiscountCodeChange={setDiscountCode}
         />
       </main>
 

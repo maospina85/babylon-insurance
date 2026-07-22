@@ -20,6 +20,7 @@ import java.time.Instant;
  * @param beneficiaryCount   number of assigned beneficiaries
  * @param assistanceCount    number of selected assistance services
  * @param createdAt          creation timestamp
+ * @param appliedDiscountCode promotional code applied to {@code totalMonthlyPrima}, or {@code null} if none
  */
 public record QuoteResponse(
         String quoteId,
@@ -30,7 +31,8 @@ public record QuoteResponse(
         int coverageCount,
         int beneficiaryCount,
         int assistanceCount,
-        Instant createdAt
+        Instant createdAt,
+        String appliedDiscountCode
 ) {
 
     /**
@@ -49,7 +51,8 @@ public record QuoteResponse(
                 quote.selectedCoverages().size(),
                 quote.beneficiaries().size(),
                 quote.assistances().size(),
-                quote.createdAt()
+                quote.createdAt(),
+                quote.appliedDiscountCode()
         );
     }
 }

@@ -27,6 +27,7 @@ import java.util.List;
  * @param beneficiaries     beneficiary assignments (may be empty)
  * @param assistances       IDs of selected free assistance services
  * @param paymentFrequency  billing period: mensual or anual
+ * @param discountCode      optional promotional code; validated and applied server-side
  */
 public record CreateQuoteRequest(
 
@@ -59,5 +60,8 @@ public record CreateQuoteRequest(
 
         @NotBlank
         @Pattern(regexp = "^(mensual|anual)$", message = "Frecuencia debe ser mensual o anual")
-        String paymentFrequency
+        String paymentFrequency,
+
+        @Size(max = 40)
+        String discountCode
 ) {}
