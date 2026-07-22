@@ -32,6 +32,3 @@ Thumbs.db
 # Claude
 .claude/
 backend/.secrets/
-
-# RAG docs — generados localmente para el agente, no se versionan
-docs/rag/

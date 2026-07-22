@@ -20,8 +20,10 @@ babylon-insurance/
 ├── frontend/          React 18 + Vite — SPA modular con theming por tenant
 ├── backend/           Spring Boot 4.0.3 + Java 23 + WebFlux + MongoDB Reactive
 ├── tests/             Playwright E2E — 36 tests contra producción Cloud Run
-├── docs/rag/          Base RAG para el agente de automatización — GITIGNOREADO, no se sube al repo
 └── .github/workflows/ CI/CD → GCP Cloud Run via GitHub Actions + Workload Identity Federation
+
+La base RAG del agente de automatización (`docs/rag/`) vive fuera de este repo,
+en `E:\Personal\Proyectos\Agentes\babylon-qa-agent\docs\rag\` — nunca se sube acá.
 ```
 
 ---
@@ -231,7 +233,10 @@ npm run build
 - Permisos: `contents:write`, `pull_requests:write`, `metadata:read` — nada de `workflows` ni `secrets`
 - Private key en `backend/.secrets/` (gitignoreada), tokens de instalación expiran en 1h
 - Propósito: al abrir una PR, revisa el diff y genera/actualiza tests Playwright para mantener la suite E2E sincronizada con el código; a futuro el pipeline podría exigir la suite completa en verde como requisito de merge (no implementado aún)
-- Detalle completo de convenciones que el agente debe seguir: `docs/rag/agente-automatizacion.md` (local, gitignoreado)
+- Detalle completo de convenciones que el agente debe seguir: `agente-automatizacion.md` en la base RAG (`E:\Personal\Proyectos\Agentes\babylon-qa-agent\docs\rag\`, fuera de este repo)
+
+### Infraestructura local del QA Agent (experimental, no parte del deploy de producto)
+Stack corriendo local vía WSL2 + Docker Desktop en la máquina del desarrollador (no en GCP): n8n (orquestador), Ollama con `qwen2.5-coder:3b` (genera tests) + `nomic-embed-text` (embeddings), PostgreSQL+PGVector (RAG, tabla `rag_babylon`, indexado desde `E:\Personal\Proyectos\Agentes\babylon-qa-agent\docs\rag\` vía script local `index_rag.py` — fuera de este repo), contenedor Playwright para correr los tests generados, `localtunnel` para exponer el webhook de n8n a GitHub. Flujo objetivo: PR de dev → webhook → diff → embedding → contexto RAG → Ollama genera tests Playwright → se corren → si pasan, PR a `feature/qa-tests-{n}` para aprobación humana; si fallan, se guardan como aprendizaje negativo en el RAG. **Workflow de n8n aún no creado** (pendiente). Detalle completo (puertos, red Docker, drivers GPU) vive solo en memoria local del asistente, no en este repo — es infraestructura de la máquina del desarrollador, no del producto.
 
 ---
 

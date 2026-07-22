@@ -13,7 +13,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: 'https://babylon-frontend-1022043503878.us-central1.run.app',
+    baseURL: process.env.BASE_URL || 'https://babylon-frontend-1022043503878.us-central1.run.app',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
